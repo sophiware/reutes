@@ -27,41 +27,32 @@ RouteComponentContainerWrapper.propTypes = {
   requiredAuth: PropTypes.bool
 }
 
+function isUndefinedThen (prop, value) {
+  return prop === undefined ? value : prop
+}
+
 function RouteWithSubRoutes (route) {
   if (route.redirect) {
     return React.createElement(Route, {
-      exact: route.exact === undefined ? true : route.exact,
+      exact: isUndefinedThen(route.exact, true),
       path: route.path,
+      strict: isUndefinedThen(route.strict, false),
       render: () => React.createElement(Redirect, {
         to: route.redirect
       })
     })
   }
 
-  if (!route.path) {
-    return React.createElement(Route, {
-      component: route.component
-    })
-  }
-
-  const render = routerProps => {
-    const props = route.props ? { ...route.props, ...routerProps } : routerProps
-
-    const Component = route.component
-
-    return React.createElement(RouteComponentContainerWrapper, {
-      requiredAuth: route.auth || false,
-      children: React.createElement(Component, props)
-    })
-  }
-
-  return React.createElement(Route, {
-    exact: route.exact,
-    sensitive: route.sensitive,
-    strict: route.strict,
-    path: route.path,
-    render
+  const render = routerProps => React.createElement(RouteComponentContainerWrapper, {
+    requiredAuth: route.auth || false,
+    children: React.createElement(route.component, routerProps)
   })
+
+  const routeProps = {
+    render
+  }
+
+  return React.createElement(Route, routeProps)
 }
 
 function bestCopyEver (src) {
@@ -141,7 +132,7 @@ function routeGenerator (target, basePath) {
 
   if (route.path) {
     route.path = basePath + route.path
-    route.pathRegex = basePath + route.path.replace(RegExp(':' + reg, 'g'), reg) + '$'
+    route.pathRegex = route.path.replace(RegExp(':' + reg, 'g'), reg) + '$'
   }
 
   if (route.children) {
@@ -152,10 +143,11 @@ function routeGenerator (target, basePath) {
 }
 
 function resolveBasePath (path) {
-  return path[path.length - 1].replace('/', '')
+  return path.slice(0, -1) + path[path.length - 1].replace('/', '')
 }
 
 export function handlerRoutes (targetRoutes, basePath = '', parents = []) {
+  console.log('handlerRoutes', 'basePath', basePath)
   const routes = []
   const views = {}
   const viewsList = []
@@ -183,7 +175,6 @@ export function handlerRoutes (targetRoutes, basePath = '', parents = []) {
     viewsList,
     getCurrentView () {
       const currentView = viewsList.filter(view => {
-        console.log(view.pathRegex, window.location.pathname)
         return RegExp(view.pathRegex).test(window.location.pathname)
       })
       return currentView ? currentView[0] : null
@@ -203,21 +194,34 @@ function viewFormation (target) {
   })
 }
 
+function defaultReactRouterProps (route) {
+  return {
+    ...route,
+    exact: isUndefinedThen(route.sensitive, true),
+    sensitive: isUndefinedThen(route.sensitive, true),
+    strict: isUndefinedThen(route.sensitive, false)
+  }
+}
+
 export function WrapperRouter ({ routes, animate }) {
-  return animate ? React.createElement(AnimatedSwitch, {
-    atEnter: { opacity: 0 },
-    atLeave: { opacity: 0 },
-    atActive: { opacity: 1 },
-    className: 'switch-wrapper',
-    children: routes.map((route, i) => React.createElement(RouteWithSubRoutes, {
-      key: i,
-      ...route
-    }))
-  }) : React.createElement(React.Fragment, {
-    children: routes.map((route, i) => React.createElement(RouteWithSubRoutes, {
-      key: i,
-      ...route
-    }))
+  console.log('allRoutes', routes)
+  const children = routes.map((route, key) => React.createElement(RouteWithSubRoutes, {
+    key,
+    ...defaultReactRouterProps(route)
+  }))
+
+  if (animate) {
+    return React.createElement(AnimatedSwitch, {
+      atEnter: { opacity: 0 },
+      atLeave: { opacity: 0 },
+      atActive: { opacity: 1 },
+      className: 'switch-wrapper',
+      children
+    })
+  }
+
+  return React.createElement(React.Fragment, {
+    children
   })
 }
 
@@ -242,7 +246,6 @@ export function Uiarum (props) {
   const { group, ...other } = props
 
   const routes = localMemory[group]
-  console.log(routes)
 
   return React.createElement(WrapperRouter, {
     ...routes,
