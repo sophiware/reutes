@@ -1,0 +1,9 @@
+{
+  "parser": "babel-eslint",
+  "extends": ["standard"],
+  "rules": {
+    "react/jsx-fragments": 0,
+    "react/no-unused-vars": 0,
+    "no-unused-vars": 0
+  }
+}

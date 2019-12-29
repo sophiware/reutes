@@ -1,0 +1,17 @@
+{
+  "name": "uiarum",
+  "description": "Wrapper react-router",
+  "version": "0.1.0",
+  "main": "Uiarum.js",
+  "peerDependencies": {
+    "react": ">=15",
+    "prop-types": ">=15",
+    "react-router-dom": ">=5.1.2",
+    "react-router-transition": ">=2.0.0"
+  },
+  "devDependencies": {
+    "eslint": "^6.6.0",
+    "eslint-config-standard": "^14.0.1",
+    "eslint-plugin-standard": "^4.0.1"
+  }
+}
