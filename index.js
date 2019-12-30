@@ -242,19 +242,20 @@ export function createRoutes (groupName, routesParams) {
   return localMemory
 }
 
-export function Uiarum (props) {
-  const { group, ...other } = props
+export function Routes (props) {
+  const { group, routes, ...other } = props
 
-  const routes = localMemory[group]
+  const localRoutes = routes || localMemory[group]
 
   return React.createElement(WrapperRouter, {
-    ...routes,
+    ...localRoutes,
     ...other
   })
 }
 
-Uiarum.propTypes = {
-  group: PropTypes.string
+Routes.propTypes = {
+  group: PropTypes.string,
+  routes: PropTypes.object
 }
 
 export * from 'react-router-dom'

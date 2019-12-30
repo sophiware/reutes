@@ -1,8 +1,8 @@
 {
-  "name": "uiarum",
+  "name": "reutes",
   "description": "Wrapper react-router",
   "version": "0.1.0",
-  "main": "Uiarum.js",
+  "main": "index.js",
   "peerDependencies": {
     "react": ">=15",
     "prop-types": ">=15",
