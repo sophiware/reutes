@@ -1,25 +1,82 @@
-import React from 'react'
-import { Route, Redirect } from 'react-router-dom'
+import React, { useEffect, useState, useRef, useCallback } from 'react'
+import { Route, useHistory } from 'react-router-dom'
 import PropTypes from 'prop-types'
 import { AnimatedSwitch } from 'react-router-transition'
 import querystring from 'querystring'
-const localMemory = {}
+
+const localMemory = {
+  routes: {},
+  authentication: null
+}
+
+function useMountedState () {
+  const mountedRef = useRef(false)
+  const isMounted = useCallback(() => mountedRef.current, [mountedRef.current])
+
+  useEffect(() => {
+    mountedRef.current = true
+
+    return () => {
+      mountedRef.current = false
+    }
+  })
+
+  return isMounted
+}
+
+function Redirect (props) {
+  const { to } = props
+  const history = useHistory()
+
+  useEffect(() => {
+    history.replace(to)
+  }, [])
+
+  return null
+}
+
+Redirect.propTypes = {
+  to: PropTypes.string
+}
 
 function RouteComponentContainerWrapper (props) {
-  const auth = true
+  const isMounted = useMountedState()
+  const [auth, setAuth] = useState(null)
   const { children, requiredAuth } = props
+  const history = useHistory()
 
-  if (!requiredAuth) {
+  async function localAuth () {
+    try {
+      const result = await getCallbackResult(localMemory.authFunc())
+
+      if (isMounted()) {
+        setAuth(result)
+      }
+    } catch (err) {
+      if (isMounted()) {
+        setAuth(false)
+      }
+    }
+  }
+
+  useEffect(() => {
+    if (requiredAuth) {
+      localAuth()
+    }
+  }, [])
+
+  useEffect(() => {
+    if (auth === false) {
+      const currentHref = window.location.href.split(window.location.host)[1]
+      history.push(localMemory.notAuthPath + `?redirect=${currentHref}`)
+    }
+  }, [auth])
+
+  if (!requiredAuth || auth === true) {
     return children
   }
 
-  if (auth === true) {
-    return children
-  }
-
-  return React.createElement(Redirect, {
-    to: `/login?redirect=${window.location.href.split(window.location.host)[1]}`
-  })
+  return null
 }
 
 RouteComponentContainerWrapper.propTypes = {
@@ -33,13 +90,8 @@ function isUndefinedThen (prop, value) {
 
 function RouteWithSubRoutes (route) {
   if (route.redirect) {
-    return React.createElement(Route, {
-      exact: isUndefinedThen(route.exact, true),
-      path: route.path,
-      strict: isUndefinedThen(route.strict, false),
-      render: () => React.createElement(Redirect, {
-        to: route.redirect
-      })
+    return React.createElement(Redirect, {
+      to: route.redirect
     })
   }
 
@@ -234,10 +286,25 @@ WrapperRouter.propTypes = {
   animate: PropTypes.bool
 }
 
+function getCallbackResult (obj) {
+  return new Promise((resolve, reject) => {
+    if (!!obj && (typeof obj === 'object' || typeof obj === 'function') && typeof obj.then === 'function') {
+      obj.then(resolve).catch(reject)
+    }
+
+    resolve(obj)
+  })
+}
+
+export function setAuthenticator (funcOrPromise, notAuthPath) {
+  localMemory.notAuthPath = notAuthPath
+  localMemory.authFunc = funcOrPromise
+}
+
 export function createRoutes (groupName, routesParams) {
   const routes = handlerRoutes(routesParams)
 
-  localMemory[groupName] = routes
+  localMemory.routes[groupName] = routes
 
   return localMemory
 }
@@ -245,7 +312,7 @@ export function createRoutes (groupName, routesParams) {
 export function Routes (props) {
   const { group, routes, ...other } = props
 
-  const localRoutes = routes || localMemory[group]
+  const localRoutes = routes || localMemory.routes[group]
 
   return React.createElement(WrapperRouter, {
     ...localRoutes,
