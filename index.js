@@ -128,11 +128,10 @@ const pathUtils = {
 }
 
 function viewGenerator (target, basePath, key, parents) {
-  const reg = '([.A-Za-z0-9_-]*)'
   const view = bestCopyEver(target)
 
   if (view.path) {
-    view.pathRegex = basePath + view.path.replace(RegExp(':' + reg, 'g'), reg) + '$'
+    view.pathRegex = createPathRegex(basePath + target.path)
 
     view.getPath = function () {
       return basePath + view.path
@@ -178,13 +177,18 @@ function viewGenerator (target, basePath, key, parents) {
   return viewFormation(view)
 }
 
-function routeGenerator (target, basePath, parentAuth) {
+function createPathRegex (path) {
   const reg = '([.A-Za-z0-9_-]*)'
+  const afterBar = path === '/' ? '$' : '(\\/|)$'
+  return path.replace(RegExp('/', 'g'), '\\/').replace(RegExp(':' + reg, 'g'), reg) + afterBar
+}
+
+function routeGenerator (target, basePath, parentAuth) {
   const route = bestCopyEver(target)
 
   if (route.path) {
     route.path = basePath + route.path
-    route.pathRegex = route.path.replace(RegExp(':' + reg, 'g'), reg) + '$'
+    route.pathRegex = createPathRegex(route.path)
   }
 
   if (route.auth === undefined) {
@@ -232,7 +236,8 @@ export function handlerRoutes (targetRoutes, basePath = '', parentAuth = false, 
       const currentView = viewsList.filter(view => {
         return RegExp(view.pathRegex).test(window.location.pathname)
       })
-      return currentView ? currentView[0] : null
+
+      return currentView ? currentView[currentView.length - 1] : null
     }
   }
 }
@@ -259,7 +264,6 @@ function defaultReactRouterProps (route) {
 }
 
 export function WrapperRouter ({ routes, animate }) {
-  console.log('allRoutes', routes)
   const children = routes.map((route, key) => React.createElement(RouteWithSubRoutes, {
     key,
     ...defaultReactRouterProps(route)
@@ -310,6 +314,10 @@ export function createRoutes (groupName, routesParams) {
   localMemory.routes[groupName] = routes
 
   return localMemory
+}
+
+export function useRoutes (groupName) {
+  return localMemory.routes[groupName]
 }
 
 export function Routes (props) {
