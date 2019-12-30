@@ -178,13 +178,17 @@ function viewGenerator (target, basePath, key, parents) {
   return viewFormation(view)
 }
 
-function routeGenerator (target, basePath) {
+function routeGenerator (target, basePath, parentAuth) {
   const reg = '([.A-Za-z0-9_-]*)'
   const route = bestCopyEver(target)
 
   if (route.path) {
     route.path = basePath + route.path
     route.pathRegex = route.path.replace(RegExp(':' + reg, 'g'), reg) + '$'
+  }
+
+  if (route.auth === undefined) {
+    route.auth = parentAuth
   }
 
   if (route.children) {
@@ -198,22 +202,21 @@ function resolveBasePath (path) {
   return path.slice(0, -1) + path[path.length - 1].replace('/', '')
 }
 
-export function handlerRoutes (targetRoutes, basePath = '', parents = []) {
-  console.log('handlerRoutes', 'basePath', basePath)
+export function handlerRoutes (targetRoutes, basePath = '', parentAuth = false, parents = []) {
   const routes = []
   const views = {}
   const viewsList = []
 
   for (const key in targetRoutes) {
     const target = targetRoutes[key]
-    const route = routeGenerator(target, basePath)
+    const route = routeGenerator(target, basePath, parentAuth)
     views[key] = viewGenerator(target, basePath, key, parents)
 
     routes.push(route)
     viewsList.push(views[key])
 
     if (target.children) {
-      const children = handlerRoutes(target.children, resolveBasePath(route.path), [...parents, views[key]])
+      const children = handlerRoutes(target.children, resolveBasePath(route.path), route.auth, [...parents, views[key]])
       routes.push(...children.routes)
       viewsList.push(...children.viewsList)
       views[key].children = children.views
