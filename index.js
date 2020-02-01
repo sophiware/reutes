@@ -1,12 +1,13 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react'
-import { Route, useHistory } from 'react-router-dom'
+import { BrowserRouter, Route, useHistory, Switch } from 'react-router-dom'
 import PropTypes from 'prop-types'
 import { AnimatedSwitch } from 'react-router-transition'
 import querystring from 'querystring'
 
 const localMemory = {
   routes: {},
-  authentication: null
+  authentication: null,
+  params: {}
 }
 
 function useMountedState () {
@@ -89,6 +90,8 @@ function isUndefinedThen (prop, value) {
 }
 
 function RouteWithSubRoutes (route) {
+  localMemory.params = route.computedMatch.params
+
   if (route.redirect) {
     return React.createElement(Redirect, {
       to: route.redirect
@@ -97,7 +100,8 @@ function RouteWithSubRoutes (route) {
 
   const render = routerProps => React.createElement(RouteComponentContainerWrapper, {
     requiredAuth: route.auth || false,
-    children: React.createElement(route.component, routerProps)
+    children: React.createElement(route.component, {...routerProps, ...route}),
+    ...route
   })
 
   const routeProps = {
@@ -279,7 +283,7 @@ export function WrapperRouter ({ routes, animate }) {
     })
   }
 
-  return React.createElement(React.Fragment, {
+  return React.createElement(Switch, {
     children
   })
 }
@@ -303,6 +307,8 @@ function getCallbackResult (obj) {
   })
 }
 
+export * from 'react-router-dom'
+
 export function setAuthenticator (funcOrPromise, notAuthPath) {
   localMemory.notAuthPath = notAuthPath
   localMemory.authFunc = funcOrPromise
@@ -318,6 +324,10 @@ export function createRoutes (groupName, routesParams) {
 
 export function useRoutes (groupName) {
   return localMemory.routes[groupName]
+}
+
+export function useParams () {
+  return localMemory.params
 }
 
 export function Routes (props) {
@@ -336,4 +346,3 @@ Routes.propTypes = {
   routes: PropTypes.object
 }
 
-export * from 'react-router-dom'
