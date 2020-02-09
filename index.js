@@ -261,9 +261,9 @@ function viewFormation (target) {
 function defaultReactRouterProps (route) {
   return {
     ...route,
-    exact: isUndefinedThen(route.sensitive, true),
+    exact: isUndefinedThen(route.exact, true),
     sensitive: isUndefinedThen(route.sensitive, true),
-    strict: isUndefinedThen(route.sensitive, false)
+    strict: isUndefinedThen(route.strict, false)
   }
 }
 
