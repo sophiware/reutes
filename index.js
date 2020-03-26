@@ -333,7 +333,16 @@ export function useParams () {
 export function Routes (props) {
   const { group, routes, ...other } = props
 
-  const localRoutes = routes || localMemory.routes[group]
+  if (routes) {
+    const localRoutes = createRoutes(group, routes)
+
+    return React.createElement(WrapperRouter, {
+      ...localRoutes.routes[group],
+      ...other
+    })
+  }
+
+  const localRoutes = localMemory.routes[group]
 
   return React.createElement(WrapperRouter, {
     ...localRoutes,
