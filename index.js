@@ -356,5 +356,7 @@ export function Routes (props) {
 
 Routes.propTypes = {
   group: PropTypes.string,
-  routes: PropTypes.object
+  routes: PropTypes.object,
+  auth: PropTypes.func
 }
+
