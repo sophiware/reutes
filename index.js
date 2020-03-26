@@ -331,7 +331,11 @@ export function useParams () {
 }
 
 export function Routes (props) {
-  const { group, routes, ...other } = props
+  const { group, routes, auth, ...other } = props
+
+  if (auth) {
+    setAuthenticator(auth)
+  }
 
   if (routes) {
     const localRoutes = createRoutes(group, routes)
@@ -354,4 +358,3 @@ Routes.propTypes = {
   group: PropTypes.string,
   routes: PropTypes.object
 }
-
