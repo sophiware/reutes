@@ -133,12 +133,16 @@ const pathUtils = {
 }
 
 function resolveEnvs(path){
-  path.match(/\$([.A-Za-z0-9_-]*)/g).map(param => {
-    const key = param.replace('$', '')
-    if (key in localMemory.envs) {
-      path = path.replace(param, localMemory.envs[key])
-    }
-  })
+  const match = path.match(/\$([.A-Za-z0-9_-]*)/g)
+
+  if(match){
+    match.map(param => {
+      const key = param.replace('$', '')
+      if (key in localMemory.envs) {
+        path = path.replace(param, localMemory.envs[key])
+      }
+    })
+  }
 
   return path
 }
@@ -395,3 +399,4 @@ Routes.propTypes = {
   auth: PropTypes.func,
   authPath: PropTypes.string
 }
+
