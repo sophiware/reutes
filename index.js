@@ -7,7 +7,8 @@ import querystring from 'querystring'
 const localMemory = {
   routes: {},
   authentication: null,
-  params: {}
+  params: {},
+  envs: {}
 }
 
 function useMountedState () {
@@ -131,6 +132,17 @@ const pathUtils = {
   }
 }
 
+function resolveEnvs(path){
+  path.match(/\$([.A-Za-z0-9_-]*)/g).map(param => {
+    const key = param.replace('$', '')
+    if (key in localMemory.envs) {
+      path = path.replace(param, localMemory.envs[key])
+    }
+  })
+
+  return path
+}
+
 function viewGenerator (target, basePath, key, parents) {
   const view = bestCopyEver(target)
 
@@ -138,7 +150,7 @@ function viewGenerator (target, basePath, key, parents) {
     view.pathRegex = createPathRegex(basePath + target.path)
 
     view.getPath = function () {
-      return basePath + view.path
+      return resolveEnvs(basePath + view.path)
     }
 
     view.appendPath = function (path, between = '/') {
@@ -181,10 +193,29 @@ function viewGenerator (target, basePath, key, parents) {
   return viewFormation(view)
 }
 
+export function setEnvs(envs){
+  localMemory.envs = {
+    ...localMemory.envs,
+    ...envs
+  }
+}
+
+export function getEnvs(){
+  return localMemory.envs
+}
+
 function createPathRegex (path) {
   const reg = '([.A-Za-z0-9_-]*)'
   const afterBar = path === '/' ? '$' : '(\\/|)$'
-  return path.replace(RegExp('/', 'g'), '\\/').replace(RegExp(':' + reg, 'g'), reg) + afterBar
+  return path
+      .replace(RegExp('/', 'g'), '\\/')
+      .replace(RegExp('\\$' + reg, 'g'), reg)
+      .replace(RegExp(':' + reg, 'g'), reg)
+      + afterBar
+}
+
+function removeEnvs (path) {
+  return path.replace(RegExp('\\$', 'g'),  ':')
 }
 
 function routeGenerator (target, basePath, parentAuth) {
@@ -193,6 +224,7 @@ function routeGenerator (target, basePath, parentAuth) {
   if (route.path) {
     route.path = basePath + route.path
     route.pathRegex = createPathRegex(route.path)
+    route.path = removeEnvs(route.path)
   }
 
   if (route.auth === undefined) {
@@ -330,6 +362,10 @@ export function useParams () {
   return localMemory.params
 }
 
+export function useEnvs () {
+  return [getEnvs, setEnvs]
+}
+
 export function Routes (props) {
   const { group, routes, auth, authPath, ...other } = props
 
@@ -339,7 +375,6 @@ export function Routes (props) {
 
   if (routes) {
     const localRoutes = createRoutes(group, routes)
-
     return React.createElement(WrapperRouter, {
       ...localRoutes.routes[group],
       ...other
@@ -360,4 +395,3 @@ Routes.propTypes = {
   auth: PropTypes.func,
   authPath: PropTypes.string
 }
-
