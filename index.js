@@ -359,7 +359,26 @@ export function createRoutes (groupName, routesParams) {
 }
 
 export function useRoutes (groupName) {
-  return localMemory.routes[groupName]
+  if(!localMemory.routes[groupName]){
+    throw Error(`Group "${groupName}" not exist in reutes.`)
+  }
+
+  const history = useHistory()
+  const {views, ...other} = localMemory.routes[groupName]
+
+  function goTo(target, action = 'push'){
+    if(typeof target === 'function'){
+      return history[action](target(views))
+    }
+
+    return history[action](target)
+  }
+
+  return {
+    ...other,
+    views,
+    goTo
+  }
 }
 
 export function useParams () {
