@@ -41,10 +41,19 @@ Redirect.propTypes = {
   to: PropTypes.string
 }
 
+async function isAuthenticated (callback) {
+  try {
+    const result = await getCallbackResult(localMemory.authFunc())
+    callback(null, result)
+  } catch (err) {
+    callback(err)
+  }
+}
+
 function RouteComponentContainerWrapper (props) {
   const isMounted = useMountedState()
   const [auth, setAuth] = useState(null)
-  const { children, requiredAuth } = props
+  const { children, requiredAuth, redirect } = props
   const history = useHistory()
 
   async function localAuth () {
@@ -63,7 +72,17 @@ function RouteComponentContainerWrapper (props) {
 
   useEffect(() => {
     if (requiredAuth) {
-      localAuth()
+      isAuthenticated((err, result) => {
+        if(!isMounted()){
+          return
+        }
+
+        if (err) {
+          return setAuth(false)
+        }
+
+        setAuth(result)
+      })
     }
   }, [])
 
@@ -75,6 +94,11 @@ function RouteComponentContainerWrapper (props) {
   }, [auth])
 
   if (!requiredAuth || auth === true) {
+    if(redirect){
+      return React.createElement(Redirect, {
+        to: resolveEnvs(redirect)
+      })
+    }
     return children
   }
 
@@ -83,6 +107,7 @@ function RouteComponentContainerWrapper (props) {
 
 RouteComponentContainerWrapper.propTypes = {
   children: PropTypes.node,
+  redirect: PropTypes.string,
   requiredAuth: PropTypes.bool
 }
 
@@ -90,18 +115,14 @@ function isUndefinedThen (prop, value) {
   return prop === undefined ? value : prop
 }
 
-function RouteWithSubRoutes (route) {
+function RouteWithSubRoutes (props) {
+  const {redirect, ...route} = props
   localMemory.params = route.computedMatch.params
-
-  if (route.redirect) {
-    return React.createElement(Redirect, {
-      to: route.redirect
-    })
-  }
 
   const render = routerProps => React.createElement(RouteComponentContainerWrapper, {
     requiredAuth: route.auth || false,
-    children: React.createElement(route.component, {...routerProps, ...route}),
+    children: redirect ? null : React.createElement(route.component, {...routerProps, ...route}),
+    redirect,
     ...route
   })
 
