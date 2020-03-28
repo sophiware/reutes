@@ -286,7 +286,7 @@ export function handlerRoutes (targetRoutes, basePath = '', parentAuth = false, 
   const viewsList = []
 
   const fixedTargets = handlerNotFound(targetRoutes)
-  console.log(fixedTargets)
+
   for (const key in fixedTargets) {
     const target = fixedTargets[key]
     const route = routeGenerator(target, basePath, parentAuth)
@@ -395,26 +395,35 @@ export function createRoutes (groupName, routesParams) {
 }
 
 export function useRoutes (groupName) {
-  if(!localMemory.routes[groupName]){
-    throw Error(`Group "${groupName}" not exist in reutes.`)
-  }
-
   const history = useHistory()
-  const {views, ...other} = localMemory.routes[groupName]
 
-  function goTo(target, action = 'push'){
-    if(typeof target === 'function'){
-      return history[action](target(views))
+  function createResponse(group){
+    if(!localMemory.routes[group]){
+      throw Error(`Group "${group}" not exist in reutes.`)
     }
 
-    return history[action](target)
+    const {views, ...other} = localMemory.routes[group]
+
+    function goTo(target, action = 'push'){
+      if(typeof target === 'function'){
+        return history[action](target(views))
+      }
+
+      return history[action](target)
+    }
+
+    return {
+      ...other,
+      views,
+      goTo
+    }
   }
 
-  return {
-    ...other,
-    views,
-    goTo
+  if(!groupName){
+    return createResponse
   }
+
+  return createResponse(groupName)
 }
 
 export function useParams () {
