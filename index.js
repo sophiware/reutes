@@ -267,13 +267,28 @@ function resolveBasePath (path) {
   return path.slice(0, -1) + path[path.length - 1].replace('/', '')
 }
 
+function handlerNotFound(target) {
+  if('notFound' in target){
+    const {notFound, ...other} = target
+
+    return {
+      ...other,
+      notFound
+    }
+  }
+
+  return target
+}
+
 export function handlerRoutes (targetRoutes, basePath = '', parentAuth = false, parents = []) {
   const routes = []
   const views = {}
   const viewsList = []
 
-  for (const key in targetRoutes) {
-    const target = targetRoutes[key]
+  const fixedTargets = handlerNotFound(targetRoutes)
+  console.log(fixedTargets)
+  for (const key in fixedTargets) {
+    const target = fixedTargets[key]
     const route = routeGenerator(target, basePath, parentAuth)
     views[key] = viewGenerator(target, basePath, key, parents)
 
@@ -291,7 +306,7 @@ export function handlerRoutes (targetRoutes, basePath = '', parentAuth = false, 
   return {
     routes,
     views,
-    tree: targetRoutes,
+    tree: fixedTargets,
     viewsList,
     getCurrentView () {
       const currentView = viewsList.filter(view => {
