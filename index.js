@@ -175,7 +175,7 @@ function viewGenerator (target, basePath, key, parents) {
     view.pathRegex = createPathRegex(basePath + target.path)
 
     view.getPath = function () {
-      return resolveEnvs(basePath + view.path)
+      return resolveEnvs(basePath + target.path)
     }
 
     view.appendPath = function (path, between = '/') {
@@ -207,6 +207,13 @@ function viewGenerator (target, basePath, key, parents) {
 
       return path
     }
+
+    view.pathRaw = view.path
+    view.path = view.getPath
+    view.append = view.appendPath
+    view.params = view.setParams
+    view.queryParams = view.setQueryParams
+    view.options = view.preparePath
   }
 
   view.parents = parents
@@ -313,7 +320,7 @@ export function handlerRoutes (targetRoutes, basePath = '', parentAuth = false, 
         return RegExp(view.pathRegex).test(window.location.pathname)
       })
 
-      return currentView ? currentView[currentView.length - 1] : null
+      return currentView ? currentView[0] : null
     }
   }
 }
@@ -407,15 +414,18 @@ export function useRoutes (groupName) {
     function goTo(target, action = 'push'){
       if(typeof target === 'function'){
         return history[action](target(views))
+      } else if(target){
+        return history[action](target)
       }
 
-      return history[action](target)
+      return history
     }
 
     return {
       ...other,
       views,
-      goTo
+      goTo,
+      history
     }
   }
 
