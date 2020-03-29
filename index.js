@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef, useCallback } from 'react'
+import React, {useEffect, useState, useRef, useCallback, createElement} from 'react'
 import { BrowserRouter, Route, useHistory, Switch } from 'react-router-dom'
 import PropTypes from 'prop-types'
 import { AnimatedSwitch } from 'react-router-transition'
@@ -445,32 +445,41 @@ export function useEnvs () {
 }
 
 export function Routes (props) {
-  const { group, routes, auth, authPath, ...other } = props
+  const { group, routes, auth, authPath, wrapper, ...other } = props
 
   if (auth) {
     setAuthenticator(auth, authPath)
   }
 
-  if (routes) {
-    const localRoutes = createRoutes(group, routes)
-    return React.createElement(WrapperRouter, {
-      ...localRoutes.routes[group],
+  function wrapperRouterProps() {
+    if (routes) {
+      return{
+        ... createRoutes(group, routes).routes[group],
+        ...other
+      }
+    }
+
+    return {
+      ...localMemory.routes[group],
       ...other
+    }
+  }
+
+  const component = React.createElement(WrapperRouter, wrapperRouterProps())
+
+  if(wrapper) {
+    return React, createElement(wrapper, {
+      children: component
     })
   }
 
-  const localRoutes = localMemory.routes[group]
-
-  return React.createElement(WrapperRouter, {
-    ...localRoutes,
-    ...other
-  })
+  return component
 }
 
 Routes.propTypes = {
   group: PropTypes.string,
   routes: PropTypes.object,
   auth: PropTypes.func,
-  authPath: PropTypes.string
+  authPath: PropTypes.string,
+  wrapper: PropTypes.any
 }
-
