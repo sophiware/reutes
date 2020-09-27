@@ -134,7 +134,7 @@ function RouteWithSubRoutes (props) {
 }
 
 function bestCopyEver (src) {
-  return Object.assign({}, src)
+  return {...src}
 }
 
 const pathUtils = {
@@ -303,7 +303,7 @@ export function handlerRoutes (targetRoutes, basePath = '', parentAuth = false, 
     viewsList.push(views[key])
 
     if (target.children) {
-      const children = handlerRoutes(target.children, resolveBasePath(route.path), route.auth, [...parents, views[key]])
+      const children = handlerRoutes(target.children, resolveBasePath(target.path), route.auth, [...parents, views[key]])
       routes.push(...children.routes)
       viewsList.push(...children.viewsList)
       views[key].children = children.views
